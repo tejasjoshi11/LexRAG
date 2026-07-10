@@ -1,0 +1,1 @@
+"""Immutable data contracts for the LexRAG architecture."""
