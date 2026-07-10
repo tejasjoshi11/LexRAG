@@ -1,0 +1,20 @@
+document_directories:
+  acts: data/raw/acts
+  judgments: data/raw/court_judgments
+  pov: data/raw/pov
+  tax: data/raw/tax
+
+catalog_metadata: data/metadata/metadata.csv
+registry_storage: data/registry/registry.json
+
+chunking:
+  max_chunk_tokens: 448
+  chunk_overlap_tokens: 64
+  chunker_version: "v1"
+
+pipeline:
+  parser_version: "v1"
+  cleaner_version: "v1"
+  semantic_version: "v1"
+  embedding_version: "v1"
+  pipeline_version: "v1"
