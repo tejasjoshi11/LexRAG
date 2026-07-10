@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment Variables
+.env
+.env.*
+!.env.example
+
+# Local Data & Storage
+# Contains local datasets, JSON document registry, metrics, and raw files
+data/
+
+# Logs
+logs/
+*.log
+
+# Streamlit
+# Streamlit secrets must be ignored, but config.toml is tracked for UI theming.
+.streamlit/secrets.toml
+
+# Testing, Coverage & QA
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Build Artifacts
+build/
+dist/
+*.egg-info/
+*.egg
+
+# IDEs & Editor Configuration
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS Files
+.DS_Store
+Thumbs.db
