@@ -51,7 +51,7 @@ def clean_document(parsed_document: ParsedDocument) -> CleanedDocument:
     )
 
     _LOGGER.info(
-        f"Cleaned document {parsed_document.filename}."
+        f"Cleaned document {parsed_document.document_task.catalog_metadata.document_id}."
     )
 
     return cleaned_document

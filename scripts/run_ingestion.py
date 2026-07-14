@@ -109,6 +109,18 @@ def _configure_logging(level: str) -> None:
         stream=sys.stderr,
     )
 
+    # Silence noisy third-party loggers that flood the terminal
+    # especially during model initialization or HTTP requests
+    for logger_name in [
+        "httpx",
+        "httpcore",
+        "sentence_transformers",
+        "elastic_transport",
+        "qdrant_client",
+        "urllib3",
+    ]:
+        logging.getLogger(logger_name).setLevel(logging.WARNING)
+
 
 # ============================================================================
 # Document Processing
@@ -427,6 +439,18 @@ def main() -> int:
         )
 
         doc_start = time.perf_counter()
+
+        content_hash = compute_file_hash(task.pdf_path)
+
+        if document_registry.is_document_unchanged(
+            document_id=document_id,
+            content_hash=content_hash,
+        ):
+            _LOGGER.info(
+                "Skipping %s: already processed and unchanged",
+                document_id,
+            )
+            continue
 
         try:
             chunk_count, embedded_count = _process_document(
