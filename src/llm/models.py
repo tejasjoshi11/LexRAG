@@ -25,8 +25,8 @@ class Model:
 
 
 GEMINI_FLASH = Model(
-    id="gemini-3.1-flash",
-    display_name="Gemini 3.1 Flash",
+    id="gemini-3.5-flash",
+    display_name="Gemini 3.5 Flash",
     provider=Provider.GEMINI,
 )
 
