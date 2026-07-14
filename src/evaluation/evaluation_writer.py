@@ -89,10 +89,6 @@ class EvaluationWriter:
             "Retrieval_Accuracy": res.retrieval_accuracy,
             "Faithfulness_Score": res.faithfulness_score,
             "Faithfulness_Reason": res.faithfulness_reason,
-            "Faithfulness_Passed": res.faithfulness_passed,
-            "Latency_ms": res.latency,
-            "Provider": res.provider,
-            "Model": res.model,
             "Status": res.status,
             "Error_Message": res.error_message,
         }

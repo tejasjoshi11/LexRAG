@@ -140,7 +140,7 @@ def main() -> None:
 
     hybrid_results = hybrid_retriever.retrieve(
         query=query,
-        top_k=TOP_K,
+        top_k=DEFAULT_TOP_K,
     )
 
     print_results(
