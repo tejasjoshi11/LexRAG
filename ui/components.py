@@ -26,7 +26,7 @@ _logger = logging.getLogger(__name__)
 
 # ─── Style Injection ──────────────────────────────────────────────────────
 
-_CSS_PATH = Path(__file__).parent / ".streamlit" / "styles.css"
+_CSS_PATH = Path(__file__).parent / "styles.css"
 
 
 def inject_styles() -> None:
@@ -196,9 +196,6 @@ def render_source_card(
             )
     elif citation.page_start:
         tags.append(f"Page {citation.page_start}")
-
-    if citation.heading:
-        tags.append(citation.heading)
 
     meta_parts: list[str] = []
     for idx, tag in enumerate(tags):

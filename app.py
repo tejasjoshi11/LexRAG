@@ -26,7 +26,7 @@ import logging
 
 import streamlit as st
 
-from ui_components import (
+from ui.components import (
     inject_styles,
     map_error_to_message,
     render_error_from_parts,
@@ -138,7 +138,7 @@ if st.session_state._app_state == _STATE_INIT_LOAD:
 
 from src.main import create_pipeline, get_implemented_models  # noqa: E402
 from src.shared.constants import DEFAULT_TOP_K  # noqa: E402
-from ui_helpers import render_response, render_welcome  # noqa: E402
+from ui.helpers import render_response, render_welcome  # noqa: E402
 
 
 # ── Cached resources (instant — already populated during INIT_LOAD) ──────

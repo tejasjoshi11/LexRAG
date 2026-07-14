@@ -14,7 +14,7 @@ from src.contracts.rag_response import RAGResponse
 from src.contracts.retrieved_chunk import RetrievedChunk
 from src.contracts.route import Route
 
-from ui_components import (
+from ui.components import (
     render_empty_state,
     render_pipeline_details,
     render_source_card,
