@@ -1,7 +1,8 @@
-"""Rendering helpers for the LexRAG Streamlit application.
+"""Page-level rendering for the LexRAG Streamlit application.
 
-Each function encapsulates one visual section of the assistant response.
-Contains no business logic — only presentation over backend contracts.
+Composes atomic components from ``ui_components`` into complete page
+sections.  Contains no business logic — only presentation over
+backend contracts.
 """
 
 from __future__ import annotations
@@ -13,43 +14,78 @@ from src.contracts.rag_response import RAGResponse
 from src.contracts.retrieved_chunk import RetrievedChunk
 from src.contracts.route import Route
 
+from ui_components import (
+    render_empty_state,
+    render_pipeline_details,
+    render_source_card,
+)
 
-# ─── Example Queries ──────────────────────────────────────────────────────────
+
+# ─── Constants ────────────────────────────────────────────────────────────
 
 _EXAMPLE_QUERIES: tuple[str, ...] = (
     "What is judicial review?",
     "Summarize Brown v. Board of Education.",
-    "Explain Article 21 of the Constitution.",
-    "What is habeas corpus?",
+    "Explain habeas corpus.",
+    "What is the standard deduction for 2024?",
+)
+
+_CAPABILITIES: tuple[str, ...] = (
+    "Natural language legal Q&A",
+    "Legal document summarization",
+    "Hybrid semantic + keyword retrieval",
+    "Source-grounded citations",
+    "Official document links",
+    "Page-level references",
 )
 
 
-# ─── Welcome Section ─────────────────────────────────────────────────────────
+# ─── Welcome Page ─────────────────────────────────────────────────────────
 
 
 def render_welcome() -> None:
-    """Render the welcome section shown when no conversation exists."""
+    """Render the full welcome page with capabilities and examples.
 
-    st.markdown("### Welcome to LexRAG")
+    Note: the footer is NOT rendered here — it is rendered once by
+    ``app.py`` after all content to avoid duplication.
+    """
 
-    st.markdown(
-        "Ask legal questions. Summarize judgments. "
-        "Retrieve cited legal documents."
+    # ── Capabilities grid (custom HTML) ──────────────────────────────
+    caps_html = "\n".join(
+        '<div class="capability-item">'
+        '  <span class="capability-dot"></span>'
+        f"  <span>{cap}</span>"
+        "</div>"
+        for cap in _CAPABILITIES
     )
 
+    # All HTML uses <div> instead of <h1>/<p> to avoid Streamlit's
+    # internal markdown processing interfering with rendering.
     st.markdown(
-        "Every legal response includes references to official sources "
-        "whenever available."
+        '<div class="welcome-container">'
+        '  <div class="welcome-title">LexRAG</div>'
+        '  <div class="welcome-subtitle">'
+        "    US Tax &amp; Legal Q&amp;A System"
+        "  </div>"
+        '  <div class="welcome-description">'
+        "    Source-grounded legal research powered by"
+        "    hybrid retrieval and LLMs."
+        "  </div>"
+        '  <div class="welcome-section-label">Capabilities</div>'
+        '  <div class="capabilities-grid">'
+        f"    {caps_html}"
+        "  </div>"
+        '  <div class="welcome-divider"></div>'
+        '  <div class="welcome-section-label">Try an example</div>'
+        "</div>",
+        unsafe_allow_html=True,
     )
 
-    st.divider()
-
-    st.markdown("**Try an example:**")
-
-    cols = st.columns(2)
+    # ── Example buttons (Streamlit for interactivity) ────────────────
+    spacer_l, col_a, col_b, spacer_r = st.columns([1.2, 2, 2, 1.2])
 
     for index, query in enumerate(_EXAMPLE_QUERIES):
-        with cols[index % 2]:
+        with (col_a if index % 2 == 0 else col_b):
             if st.button(
                 query,
                 key=f"example_{index}",
@@ -59,7 +95,7 @@ def render_welcome() -> None:
                 st.rerun()
 
 
-# ─── Response Orchestrator ────────────────────────────────────────────────────
+# ─── Response Orchestrator ────────────────────────────────────────────────
 
 
 def render_response(
@@ -68,186 +104,117 @@ def render_response(
     show_pipeline_details: bool,
     show_retrieved_context: bool,
 ) -> None:
-    """Render a complete assistant response based on route.
+    """Render a complete assistant response.
 
-    Dispatches to the appropriate rendering helpers depending on the
-    route decision attached to the response.
+    Dispatches to the appropriate rendering helpers depending on
+    the route decision attached to the response.
     """
 
     route = response.route_decision.route
 
-    _render_answer(response)
+    # ── Answer ───────────────────────────────────────────────────────
+    st.markdown(response.answer)
 
+    # ── Sources ──────────────────────────────────────────────────────
     if route == Route.LEGAL_RAG and response.citations:
-        _render_sources(response.citations)
+        _render_sources(
+            response.citations,
+            response.retrieved_chunks,
+            show_context=show_retrieved_context,
+        )
+    elif route == Route.LEGAL_RAG and not response.citations:
+        render_empty_state(
+            "\u2014",
+            "No citations available",
+            "The model did not produce source references for "
+            "this answer.",
+        )
 
-    if (
-        show_retrieved_context
-        and route == Route.LEGAL_RAG
-        and response.retrieved_chunks
-    ):
-        _render_retrieved_context(response.retrieved_chunks)
-
+    # ── Pipeline details ─────────────────────────────────────────────
     if show_pipeline_details and route in (
         Route.LEGAL_RAG,
         Route.GENERAL_CHAT,
     ):
-        _render_pipeline_details(response)
+        render_pipeline_details(response)
 
 
-# ─── Answer ───────────────────────────────────────────────────────────────────
+# ─── Sources ──────────────────────────────────────────────────────────────
 
 
-def _render_answer(response: RAGResponse) -> None:
-    """Render the assistant answer as Markdown."""
-
-    st.markdown(response.answer)
-
-
-# ─── Sources ──────────────────────────────────────────────────────────────────
-
-
-def _render_sources(citations: tuple[Citation, ...]) -> None:
-    """Render the Sources section for LEGAL_RAG responses.
-
-    Each citation is displayed as a clean card-like block with title,
-    page information, section heading, and an official source link.
-    Empty metadata fields are hidden.
-    """
-
-    st.markdown("#### Sources")
-
-    for index, citation in enumerate(citations):
-
-        st.markdown(f"**{citation.title}**")
-
-        details: list[str] = []
-
-        if citation.page_start and citation.page_end:
-            if citation.page_start == citation.page_end:
-                details.append(f"Page {citation.page_start}")
-            else:
-                details.append(
-                    f"Pages {citation.page_start}"
-                    f"\u2013{citation.page_end}"
-                )
-        elif citation.page_start:
-            details.append(f"Page {citation.page_start}")
-
-        if citation.heading:
-            details.append(f"Section: {citation.heading}")
-
-        if details:
-            st.markdown(" \u00b7 ".join(details))
-
-        if citation.source_url:
-            st.link_button(
-                "\U0001f4cc Open Official Source",
-                citation.source_url,
-            )
-
-        if index < len(citations) - 1:
-            st.divider()
-
-
-# ─── Retrieved Context ────────────────────────────────────────────────────────
-
-
-def _render_retrieved_context(
+def _render_sources(
+    citations: tuple[Citation, ...],
     chunks: tuple[RetrievedChunk, ...],
+    *,
+    show_context: bool,
 ) -> None:
-    """Render the Retrieved Context section.
+    """Render unified source cards inside a collapsed expander."""
 
-    Each chunk appears inside its own expander with metadata and the
-    full chunk text rendered as Markdown.
+    count = len(citations)
+    total_chunks = len(chunks)
+
+    paired: list[tuple[Citation, RetrievedChunk | None]] = []
+    for citation in citations:
+        matched = _match_citation_to_chunk(citation, chunks)
+        paired.append((citation, matched))
+
+    # Preserve backend retrieval order. If citation matching disrupts the ordering,
+    # restore the backend-defined ranking before rendering. Do not recompute or 
+    # invent ranking in the presentation layer.
+    def get_rank(chunk: RetrievedChunk | None) -> int:
+        if chunk is None:
+            return 99999
+        try:
+            return chunks.index(chunk)
+        except ValueError:
+            return 99999
+
+    paired.sort(key=lambda pair: get_rank(pair[1]))
+
+    with st.expander(f"Sources ({count})", expanded=False):
+        for citation, chunk in paired:
+            chunk_rank = get_rank(chunk) + 1 if chunk else None
+            render_source_card(
+                citation,
+                chunk,
+                chunk_rank=chunk_rank if chunk_rank and chunk_rank < 99999 else None,
+                total_chunks=total_chunks,
+                show_context=show_context,
+            )
+
+
+def _match_citation_to_chunk(
+    citation: Citation,
+    chunks: tuple[RetrievedChunk, ...],
+) -> RetrievedChunk | None:
+    """Find the best matching chunk for a citation.
+
+    Matches first by title + page_start, then title + heading,
+    and falls back to title alone.
     """
 
-    st.markdown("#### Retrieved Context")
-
+    # 1. Prefer title + page_start
     for chunk in chunks:
+        if (
+            chunk.title == citation.title
+            and citation.page_start
+            and chunk.page_start
+            and citation.page_start == chunk.page_start
+        ):
+            return chunk
+            
+    # 2. Prefer title + heading (Section)
+    for chunk in chunks:
+        if (
+            chunk.title == citation.title
+            and citation.heading
+            and chunk.heading
+            and citation.heading == chunk.heading
+        ):
+            return chunk
 
-        label = (
-            f"{chunk.title} \u2014 "
-            f"Score: {chunk.retrieval_score:.4f}"
-        )
+    # 3. Fallback — title only
+    for chunk in chunks:
+        if chunk.title == citation.title:
+            return chunk
 
-        with st.expander(label, expanded=False):
-
-            col1, col2 = st.columns(2)
-
-            with col1:
-                st.markdown(f"**Document:** {chunk.title}")
-                st.markdown(
-                    f"**Retrieval Method:** "
-                    f"{chunk.retrieval_method.value.title()}"
-                )
-
-            with col2:
-                st.markdown(
-                    f"**Similarity Score:** "
-                    f"{chunk.retrieval_score:.4f}"
-                )
-
-                if chunk.page_start and chunk.page_end:
-                    if chunk.page_start == chunk.page_end:
-                        st.markdown(f"**Page:** {chunk.page_start}")
-                    else:
-                        st.markdown(
-                            f"**Pages:** "
-                            f"{chunk.page_start}\u2013{chunk.page_end}"
-                        )
-                elif chunk.page_start:
-                    st.markdown(f"**Page:** {chunk.page_start}")
-
-            if chunk.heading:
-                st.markdown(f"**Section:** {chunk.heading}")
-
-            st.divider()
-
-            st.markdown(chunk.chunk_text)
-
-
-# ─── Pipeline Details ─────────────────────────────────────────────────────────
-
-
-def _render_pipeline_details(response: RAGResponse) -> None:
-    """Render Pipeline Details inside a collapsed expander.
-
-    Displays only data returned by the backend. Nothing is calculated
-    or fabricated by the frontend.
-    """
-
-    with st.expander("Pipeline Details", expanded=False):
-
-        route_decision = response.route_decision
-        llm = response.llm_response
-
-        col1, col2 = st.columns(2)
-
-        with col1:
-            st.markdown(
-                f"**Selected Route:** {route_decision.route.value}"
-            )
-            st.markdown(
-                f"**Router Confidence:** "
-                f"{route_decision.confidence:.2f}"
-            )
-            st.markdown(f"**Generation Model:** {llm.model}")
-            st.markdown(
-                f"**Retrieved Chunks:** "
-                f"{len(response.retrieved_chunks)}"
-            )
-
-        with col2:
-            st.markdown(
-                f"**Generation Latency:** {llm.latency_ms:.0f} ms"
-            )
-            st.markdown(f"**Prompt Tokens:** {llm.prompt_tokens:,}")
-            st.markdown(
-                f"**Completion Tokens:** {llm.completion_tokens:,}"
-            )
-            st.markdown(f"**Total Tokens:** {llm.total_tokens:,}")
-
-        st.markdown(
-            f"**Finish Reason:** {llm.finish_reason.value}"
-        )
+    return None
