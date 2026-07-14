@@ -8,6 +8,7 @@ from src.generation.prompts.legal_rag_prompt import (
     LEGAL_RAG_SYSTEM_PROMPT,
 )
 
+import re
 
 class PromptBuilder:
     """Build prompts for language model generation."""
@@ -63,47 +64,55 @@ class PromptBuilder:
         if not retrieved_chunks:
             return "No legal documents were retrieved."
 
-        separator = "\n" + ("-" * 80) + "\n"
+        separator = "\n" + ("=" * 80) + "\n"
 
         return separator.join(
-            self._format_chunk(
-                index=index,
-                chunk=chunk,
-            )
-            for index, chunk in enumerate(
-                retrieved_chunks,
-                start=1,
-            )
+            self._format_chunk(chunk)
+            for chunk in retrieved_chunks
+        )
+    
+    @staticmethod
+    def _clean_chunk_text(text: str) -> str:
+        """Remove internal metadata from chunk text."""
+
+        text = re.sub(
+            r"^\s*document[_ ]?id\s*:\s*.*$",
+            "",
+            text,
+            flags=re.IGNORECASE | re.MULTILINE,
         )
 
+        return text.strip()
+    
     def _format_chunk(
         self,
-        *,
-        index: int,
         chunk: RetrievedChunk,
     ) -> str:
         """Format a retrieved chunk for the prompt."""
 
-        return f"""Retrieved Document {index}
+        pages = (
+            str(chunk.page_start)
+            if chunk.page_start == chunk.page_end
+            else f"{chunk.page_start}-{chunk.page_end}"
+        )
+        
+        content = self._clean_chunk_text(chunk.chunk_text)
+
+        return f"""
+Retrieved Evidence #{chunk.retrieval_rank}
 
 Title:
 {chunk.title}
 
-Document ID:
-{chunk.document_id}
-
-Heading:
-{chunk.heading}
-
 Pages:
-{chunk.page_start}-{chunk.page_end}
+{pages}
 
 Source:
 {chunk.source_url}
 
 Content:
-{chunk.chunk_text}
-"""
+{content}
+""".strip()
 
     def _build_user_prompt(
         self,

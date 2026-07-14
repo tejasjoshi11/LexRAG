@@ -5,7 +5,7 @@ document_directories:
   tax: data/raw/tax
 
 catalog_metadata: data/metadata/metadata.csv
-registry_storage: data/registry/registry.json
+registry_storage: artifacts/registry/registry.json
 
 chunking:
   max_chunk_tokens: 448
@@ -18,3 +18,20 @@ pipeline:
   semantic_version: "v1"
   embedding_version: "v1"
   pipeline_version: "v1"
+
+evaluation:
+  golden_set_path: data/evaluation/golden_set.xlsx
+  generated_answers_path: artifacts/evaluation/generated_answers.xlsx
+  evaluation_results_path: artifacts/evaluation/evaluation_results.xlsx
+  evaluation_summary_path: artifacts/evaluation/evaluation_summary.json
+
+  provider: gemini
+  model: gemini-3.5-flash
+  top_k: 5
+  
+  judge_model: gemini-3.5-flash
+  faithfulness_threshold: 0.5
+
+  checkpoint_interval: 10
+  max_consecutive_failures: 3
+  resume: true
