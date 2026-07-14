@@ -10,6 +10,11 @@ class EmbeddingProvider(ABC):
 
     @property
     @abstractmethod
+    def provider_name(self) -> str:
+        """Return the embedding provider name."""
+
+    @property
+    @abstractmethod
     def model_name(self) -> str:
         """Return the immutable embedding model identifier."""
 

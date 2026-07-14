@@ -29,6 +29,11 @@ class SentenceTransformerProvider(EmbeddingProvider):
             ) from exc
 
     @property
+    def provider_name(self) -> str:
+        """Return the embedding provider name."""
+        return "sentence_transformers"
+
+    @property
     def model_name(self) -> str:
         """Return the embedding model identifier."""
         return self._model_name
@@ -87,4 +92,4 @@ class SentenceTransformerProvider(EmbeddingProvider):
             _LOGGER.exception("Query embedding failed.")
             raise EmbeddingError(
                 "Failed to generate the query embedding."
-            ) from exc
+            ) from exc
